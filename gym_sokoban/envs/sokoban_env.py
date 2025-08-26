@@ -1,7 +1,7 @@
-import gym
-from gym.utils import seeding
-from gym.spaces.discrete import Discrete
-from gym.spaces import Box
+import gymnasium as gym
+from gymnasium.utils import seeding
+from gymnasium.spaces.discrete import Discrete
+from gymnasium.spaces import Box
 from .room_utils import generate_room
 from .render_utils import room_to_rgb, room_to_tiny_world_rgb
 import numpy as np
@@ -75,7 +75,8 @@ class SokobanEnv(gym.Env):
 
         self._calc_reward()
         
-        done = self._check_if_done()
+        term = self._check_if_all_boxes_on_target()
+        trunc = self._check_if_maxsteps()
 
         # Convert the observation to RGB frame
         observation = self.render(mode=observation_mode)
@@ -85,11 +86,11 @@ class SokobanEnv(gym.Env):
             "action.moved_player": moved_player,
             "action.moved_box": moved_box,
         }
-        if done:
+        if term or trunc:
             info["maxsteps_used"] = self._check_if_maxsteps()
             info["all_boxes_on_target"] = self._check_if_all_boxes_on_target()
 
-        return observation, self.reward_last, done, info
+        return observation, self.reward_last, term, trunc, info
 
     def _push(self, action):
         """
@@ -199,7 +200,7 @@ class SokobanEnv(gym.Env):
     def _check_if_maxsteps(self):
         return (self.max_steps == self.num_env_steps)
 
-    def reset(self, second_player=False, render_mode='rgb_array'):
+    def reset(self, seed=None, second_player=False, render_mode='rgb_array', **kwargs):
         try:
             self.room_fixed, self.room_state, self.box_mapping = generate_room(
                 dim=self.dim_room,
@@ -218,7 +219,10 @@ class SokobanEnv(gym.Env):
         self.boxes_on_target = 0
 
         starting_observation = self.render(render_mode)
-        return starting_observation
+
+        info = {}
+
+        return starting_observation, info
 
     def render(self, mode='human', close=None, scale=1):
         assert mode in RENDERING_MODES
@@ -229,7 +233,7 @@ class SokobanEnv(gym.Env):
             return img
 
         elif 'human' in mode:
-            from gym.envs.classic_control import rendering
+            from gymnasium.envs.classic_control import rendering
             if self.viewer is None:
                 self.viewer = rendering.SimpleImageViewer()
             self.viewer.imshow(img)
@@ -247,7 +251,6 @@ class SokobanEnv(gym.Env):
             super(SokobanEnv, self).render(mode=mode)  # just raise an exception
 
     def get_image(self, mode, scale=1):
-        
         if mode.startswith('tiny_'):
             img = room_to_tiny_world_rgb(self.room_state, self.room_fixed, scale=scale)
         else:
