@@ -39,6 +39,8 @@ class SokobanEnv(gym.Env):
 
         # Other Settings
         self.viewer = None
+        self.viewer_ax = None
+        self.viewer_img = None
         self.max_steps = max_steps
         self.action_space = Discrete(len(ACTION_LOOKUP))
         screen_height, screen_width = (dim_room[0] * 16, dim_room[1] * 16)
@@ -233,11 +235,37 @@ class SokobanEnv(gym.Env):
             return img
 
         elif 'human' in mode:
-            from gymnasium.envs.classic_control import rendering
+            # Use matplotlib for displaying images in gymnasium
+            import matplotlib.pyplot as plt
+            
             if self.viewer is None:
-                self.viewer = rendering.SimpleImageViewer()
-            self.viewer.imshow(img)
-            return self.viewer.isopen
+                # Try to use an interactive backend
+                import matplotlib
+                current_backend = matplotlib.get_backend()
+                if current_backend == 'agg':
+                    # Try different backends in order of preference
+                    for backend in ['TkAgg', 'Qt5Agg', 'MacOSX', 'GTK3Agg']:
+                        try:
+                            matplotlib.use(backend)
+                            break
+                        except:
+                            continue
+                
+                plt.ion()  # Turn on interactive mode
+                self.viewer = plt.figure(figsize=(8, 8))
+                self.viewer_ax = self.viewer.add_subplot(111)
+                self.viewer_ax.axis('off')
+                self.viewer_img = None
+            
+            if self.viewer_img is None:
+                self.viewer_img = self.viewer_ax.imshow(img)
+            else:
+                self.viewer_img.set_data(img)
+            
+            self.viewer.canvas.draw()
+            self.viewer.canvas.flush_events()
+            
+            return True
 
         elif 'raw' in mode:
             arr_walls = (self.room_fixed == 0).view(np.int8)
@@ -260,7 +288,11 @@ class SokobanEnv(gym.Env):
 
     def close(self):
         if self.viewer is not None:
-            self.viewer.close()
+            import matplotlib.pyplot as plt
+            plt.close(self.viewer)
+            self.viewer = None
+            self.viewer_ax = None
+            self.viewer_img = None
 
     def set_maxsteps(self, num_steps):
         self.max_steps = num_steps
