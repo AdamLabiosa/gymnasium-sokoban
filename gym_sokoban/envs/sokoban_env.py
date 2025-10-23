@@ -203,17 +203,22 @@ class SokobanEnv(gym.Env):
         return (self.max_steps == self.num_env_steps)
 
     def reset(self, seed=None, second_player=False, render_mode='rgb_array', **kwargs):
+        # Set the seed if provided
+        if seed is not None:
+            self.seed(seed)
+        
         try:
             self.room_fixed, self.room_state, self.box_mapping = generate_room(
                 dim=self.dim_room,
                 num_steps=self.num_gen_steps,
                 num_boxes=self.num_boxes,
-                second_player=second_player
+                second_player=second_player,
+                seed=seed
             )
         except (RuntimeError, RuntimeWarning) as e:
             print("[SOKOBAN] Runtime Error/Warning: {}".format(e))
             print("[SOKOBAN] Retry . . .")
-            return self.reset(second_player=second_player, render_mode=render_mode)
+            return self.reset(seed=seed, second_player=second_player, render_mode=render_mode)
 
         self.player_position = np.argwhere(self.room_state == 5)[0]
         self.num_env_steps = 0

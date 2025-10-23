@@ -23,15 +23,15 @@ class TwoPlayerSokobanEnv(SokobanEnv):
 
         _ = self.reset(second_player=True)
 
-    def reset(self, render_mode='rgb_array',second_player=True):
-        super(TwoPlayerSokobanEnv, self).reset(second_player=second_player)
+    def reset(self, seed=None, render_mode='rgb_array', second_player=True, **kwargs):
+        observation, info = super(TwoPlayerSokobanEnv, self).reset(seed=seed, second_player=second_player, render_mode=render_mode, **kwargs)
 
         self.player_positions = {
             0: np.argwhere(self.room_state == 5)[0],
             1: np.argwhere(self.room_state == 5)[1]
         }
 
-        return self.render(mode=render_mode)
+        return self.render(mode=render_mode), info
 
     def step(self, action, observation_mode='rgb_array'):
         assert action in ACTION_LOOKUP

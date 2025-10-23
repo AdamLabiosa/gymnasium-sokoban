@@ -22,7 +22,12 @@ class BoxobanEnv(SokobanEnv):
         super(BoxobanEnv, self).__init__(self.dim_room, max_steps, self.num_boxes, None)
         
 
-    def reset(self):
+    def reset(self, seed=None, **kwargs):
+        # Set seed if provided for reproducible level selection
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+            
         self.cache_path = '.sokoban_cache'
         self.train_data_dir = os.path.join(self.cache_path, 'boxoban-levels-master', self.difficulty, self.split)
 
@@ -57,7 +62,7 @@ class BoxobanEnv(SokobanEnv):
 
         starting_observation = room_to_rgb(self.room_state, self.room_fixed)
 
-        return starting_observation
+        return starting_observation, {}
 
     def select_room(self):
         

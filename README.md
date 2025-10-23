@@ -82,6 +82,15 @@ In addition a reward of -0.1 is given for every step, this penalizes solutions w
 ### 2.4 Level Generation
 Every time a Sokoban environment is loaded or reset a new room is randomly generated.
 The generation consists of 3 phases: Topology Generation, Placement of Targets and Players, and Reverse Playing.
+
+**Note:** You can use seeds to generate reproducible levels. See [Seed Usage Documentation](/docs/SEED_USAGE.md) for details.
+
+```python
+# Generate the same level multiple times
+env = SokobanEnv()
+obs, info = env.reset(seed=42)  # Always generates the same level
+```
+
 #### 2.4.1 Topology Generation
 To generate the basic topology of the room, consisting of walls and empty floor, is based on a random walk, which changes its direction at probability 0.35.
 At every step centered at the current position, a pattern of fields is set to empty spaces.
