@@ -1,6 +1,6 @@
 import cProfile
 import gymnasium as gym
-import gym_sokoban
+from gym_sokoban.envs.sokoban_env import SokobanEnv
 import time
 import argparse
 
@@ -15,9 +15,9 @@ args = parser.parse_args()
 env_name = args.env
 n = args.rounds
 
-cProfile.run('gym.make("{}")'.format(env_name), sort='time')
+cProfile.run('SokobanEnv("{}")'.format(env_name), sort='time')
 
-env = gym.make(env_name)
+env = SokobanEnv()
 
 start = time.time()
 for i in range(n):

@@ -1,5 +1,5 @@
 import gymnasium as gym
-import gym_sokoban
+from gym_sokoban.envs.sokoban_env import SokobanEnv
 import time
 
 # Before you can make a Sokoban Environment you need to call:
@@ -7,7 +7,7 @@ import time
 # This import statement registers all Sokoban environments
 # provided by this package
 env_name = 'Sokoban-v0'
-env = gym.make(env_name)
+env = SokobanEnv()
 
 ACTION_LOOKUP = env.unwrapped.get_action_lookup()
 print("Created environment: {}".format(env_name))
@@ -21,7 +21,8 @@ for i_episode in range(1):#20
 
         # Sleep makes the actions visible for users
         time.sleep(1)
-        observation, reward, done, info = env.step(action)
+        observation, reward, terminated, truncated, info = env.step(action)
+        done = terminated or truncated
 
         print(ACTION_LOOKUP[action], reward, done, info)
         if done:
