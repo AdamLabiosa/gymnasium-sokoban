@@ -225,11 +225,103 @@ class SokobanEnv(gym.Env):
         self.reward_last = 0
         self.boxes_on_target = 0
 
+        # Store a snapshot of the freshly generated layout to allow fast resets without regeneration
+        self._saved_layout = {
+            'room_fixed': self.room_fixed.copy(),
+            'room_state': self.room_state.copy(),
+            'box_mapping': self.box_mapping.copy() if isinstance(self.box_mapping, dict) else self.box_mapping
+        }
+
         starting_observation = self.render(render_mode)
 
         info = {}
 
         return starting_observation, info
+
+    def get_layout(self, include_mapping=True):
+        """
+        Return a copy of the current layout to allow resetting the room state later without regeneration.
+        The returned object can be stored externally by the user.
+
+        Layout schema (dict):
+        - 'room_fixed': np.ndarray, immutable room structure (walls/targets/floors)
+        - 'room_state': np.ndarray, full current state including player/boxes
+        - 'box_mapping': dict (optional), mapping of box targets to current locations
+        """
+        layout = {
+            'room_fixed': self.room_fixed.copy(),
+            'room_state': self.room_state.copy()
+        }
+        if include_mapping and hasattr(self, 'box_mapping'):
+            layout['box_mapping'] = self.box_mapping.copy() if isinstance(self.box_mapping, dict) else self.box_mapping
+        return layout
+
+    def save_layout(self, layout=None):
+        """
+        Save a layout snapshot inside the environment for quick reuse.
+        If layout is None, saves the current layout.
+        """
+        if layout is None:
+            layout = self.get_layout()
+        # Shallow copy keys, ensure arrays are copied
+        self._saved_layout = {
+            'room_fixed': layout['room_fixed'].copy(),
+            'room_state': layout['room_state'].copy(),
+            'box_mapping': layout.get('box_mapping', None)
+        }
+
+    def reset_to_layout(self, layout, render_mode='rgb_array'):
+        """
+        Reset the environment to a provided layout without regenerating a new level.
+        This applies the given room layout and reinitializes episode variables.
+
+        Args:
+            layout (dict): as returned by get_layout(); must contain 'room_state' and 'room_fixed'.
+            render_mode (str): observation render mode, defaults to 'rgb_array'.
+
+        Returns:
+            observation, info (dict)
+        """
+        if layout is None:
+            raise ValueError("layout must be provided to reset_to_layout")
+
+        if 'room_state' not in layout or 'room_fixed' not in layout:
+            raise KeyError("layout must contain 'room_state' and 'room_fixed'")
+
+        # Apply copies to avoid aliasing external buffers
+        self.room_fixed = layout['room_fixed'].copy()
+        self.room_state = layout['room_state'].copy()
+
+        # Optional: restore box_mapping if available
+        if 'box_mapping' in layout and layout['box_mapping'] is not None:
+            self.box_mapping = layout['box_mapping'].copy() if isinstance(layout['box_mapping'], dict) else layout['box_mapping']
+
+        # Recompute derived episode state
+        player_pos = np.argwhere(self.room_state == 5)
+        if player_pos.size == 0:
+            raise ValueError("Provided layout has no player (value 5) in room_state")
+        self.player_position = player_pos[0]
+        self.num_env_steps = 0
+        self.reward_last = 0
+
+        # Recalculate current boxes_on_target from state
+        empty_targets = self.room_state == 2
+        player_on_target = (self.room_fixed == 2) & (self.room_state == 5)
+        total_targets = empty_targets | player_on_target
+        self.boxes_on_target = self.num_boxes - np.where(total_targets)[0].shape[0]
+
+        # Return initial observation
+        starting_observation = self.render(render_mode)
+        info = {"reset_type": "layout"}
+        return starting_observation, info
+
+    def reset_to_saved_layout(self, render_mode='rgb_array'):
+        """
+        Convenience wrapper to reset to the last saved layout via save_layout() or initial reset().
+        """
+        if not hasattr(self, '_saved_layout') or self._saved_layout is None:
+            raise RuntimeError("No saved layout available. Call save_layout() or reset() first.")
+        return self.reset_to_layout(self._saved_layout, render_mode=render_mode)
 
     def render(self, mode='human', close=None, scale=1):
         assert mode in RENDERING_MODES
