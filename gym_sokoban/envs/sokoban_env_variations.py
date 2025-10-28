@@ -84,7 +84,7 @@ class SokobanEnv_Large1(SokobanEnv):
         super(SokobanEnv_Large1, self).__init__(**kwargs)
 
 
-class SokobanEnv_Large1(SokobanEnv):
+class SokobanEnv_Large2(SokobanEnv):
     metadata = {
         'render.modes': ['human', 'rgb_array', 'tiny_human', 'tiny_rgb_array'],
         'render_modes': ['human', 'rgb_array', 'tiny_human', 'tiny_rgb_array'],
@@ -95,7 +95,7 @@ class SokobanEnv_Large1(SokobanEnv):
         kwargs['max_steps'] = kwargs.get('max_steps', 300)
         kwargs['num_boxes'] = kwargs.get('num_boxes',5)
         kwargs['num_gen_steps'] = kwargs.get('num_gen_steps', 43)
-        super(SokobanEnv_Large1, self).__init__(**kwargs)
+        super(SokobanEnv_Large2, self).__init__(**kwargs)
 
 
 class SokobanEnv_Huge0(SokobanEnv):
