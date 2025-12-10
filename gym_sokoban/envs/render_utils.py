@@ -51,7 +51,7 @@ def room_to_rgb(room, room_structure=None):
             y_j = j * 16
             surfaces_id = room[i, j]
 
-            room_rgb[x_i:(x_i + 16), y_j:(y_j + 16), :] = surfaces[surfaces_id]
+            room_rgb[x_i:(x_i + 16), y_j:(y_j + 16), :] = surfaces[surfaces_id][:, :, :3]
 
     return room_rgb
 
